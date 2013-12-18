@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-import rospy
+#import rospy
 from std_msgs.msg import String
 import subprocess
 import os
+import time
 from i2ctools_python import I2C
     
 #TPS65271 register address
@@ -43,7 +44,7 @@ device.check_i2ctools()
 # For some reason writeI2C method doesn't seem to work
 #device.writeI2C(TPS65271_CHGCONFIG3, "0xb2")
 
-def registers():
+def printRegisters():
     print "---------------------------"
     print "---------REGISTERS---------"
     print "---------------------------"
@@ -80,6 +81,48 @@ def registers():
     print "---------------------------"
     print "---------------------------"
 
+def chargingBattery():
+    """
+        @brief Show charging battery LEDs conf.
+    """
+    for i in range(5):
+        time.sleep(0.3)
+        os.system("echo 1 > /sys/class/leds/beaglebone\:green\:usr0/brightness")
+        os.system("echo 1 > /sys/class/leds/beaglebone\:green\:usr1/brightness")
+        os.system("echo 1 > /sys/class/leds/beaglebone\:green\:usr2/brightness")
+        os.system("echo 1 > /sys/class/leds/beaglebone\:green\:usr3/brightness")
+        time.sleep(0.3)
+        os.system("echo 0 > /sys/class/leds/beaglebone\:green\:usr3/brightness")
+        os.system("echo 0 > /sys/class/leds/beaglebone\:green\:usr2/brightness")        
+        os.system("echo 0 > /sys/class/leds/beaglebone\:green\:usr1/brightness")        
+        os.system("echo 0 > /sys/class/leds/beaglebone\:green\:usr0/brightness")
+
+def noBatteryDetected():
+    """
+        @brief Show intermitent flashes notifiying that no battery is present.
+    """
+    for i in range(5):
+        os.system("echo 1 > /sys/class/leds/beaglebone\:green\:usr0/brightness")
+        os.system("echo 1 > /sys/class/leds/beaglebone\:green\:usr1/brightness")
+        os.system("echo 1 > /sys/class/leds/beaglebone\:green\:usr2/brightness")
+        os.system("echo 1 > /sys/class/leds/beaglebone\:green\:usr3/brightness")
+        time.sleep(1)
+        os.system("echo 0 > /sys/class/leds/beaglebone\:green\:usr0/brightness")
+        os.system("echo 0 > /sys/class/leds/beaglebone\:green\:usr1/brightness")
+        os.system("echo 0 > /sys/class/leds/beaglebone\:green\:usr2/brightness")
+        os.system("echo 0 > /sys/class/leds/beaglebone\:green\:usr3/brightness")
+        time.sleep(1)
+
+def finishedCharging():
+    """
+        @brief Show all lights on to notify the charging has finished.
+    """
+        os.system("echo 1 > /sys/class/leds/beaglebone\:green\:usr0/brightness")
+        os.system("echo 1 > /sys/class/leds/beaglebone\:green\:usr1/brightness")
+        os.system("echo 1 > /sys/class/leds/beaglebone\:green\:usr2/brightness")
+        os.system("echo 1 > /sys/class/leds/beaglebone\:green\:usr3/brightness")
+
+
 """
     Check TERMI bit (CHCONFIG0[4]) which determines:
 """
@@ -89,7 +132,10 @@ def checkTERMI():
     chconfig0 = bin(int(device.readI2C(TPS65271_CHGCONFIG0),16))
     # the chconfig0 register is presented like: 0b0..1. 
     # We'd like to detect: 0b10000.
-    if len(chconfig0) < 7:
+    if chconfig0 == "0b1":
+        print "No temperature sensor detected or battery temperature outside valid charging range"
+        noBatteryDetected()
+    elif len(chconfig0) < 7:
         print "TERMI: 0" 
         #print termi0
     elif len(chconfig0) == 7:
@@ -99,6 +145,8 @@ def checkTERMI():
         print "check the registers"
         #print len(chconfig0)
 
-registers()
+
+
+printRegisters()
 checkTERMI()
 
