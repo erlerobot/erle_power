@@ -143,6 +143,7 @@ def checkTERMI():
         print "TERMI: "+ TERMI
     else:
         print "check the registers"
+        chargingBattery()
         #print len(chconfig0)
 
 
